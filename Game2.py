@@ -1,23 +1,26 @@
+from dis import dis
+from turtle import color
 import pygame, sys, time, random, math
 from pygame.locals import *
 pygame.init()
 pygame.display.set_caption("Drones")
 screen = pygame.display.set_mode((1920,1080))
 clock = pygame.time.Clock()
-
 font = pygame.font.Font(None,50)
-
-width, height = pygame.display.get_surface().get_size()
+width, height = pygame.display.get_surface().get_size() 
+fireImg = pygame.transform.scale(pygame.image.load("Fire.png").convert_alpha(), [35,120]) 
 
 circleRadius = 25
 
 liquidDensity = 1.255
 
-score = 10
+score = -1
 
 leftPressed = False
 rightPressed = False
 spacePressed = False
+
+collected = True
 
 biasLeft = 0
 biasRight = 0
@@ -30,21 +33,43 @@ velY = 0
 accX = 0
 accY = 0
 
-dragCoefficientX = 0.01
-dragCoefficientY = 0.005
-gravityForce = -0.05
-accVerticalForce = 0.1
-accHorizontalForce = 0.05
+pointPosX = 0
+pointPosY = 0
 
+dragCoefficientX = 0#0.0075
+dragCoefficientY = 0#0.003
+gravityForce = -0.4
+accVerticalForce = 1
+accHorizontalForce = 0.4
 
+manualBot = False
+
+#print 'amount' number of empty lines
 def LineSpam(amount):
     for i in range(amount):
         print(" \n ")
 
-    
+#rotate a image, maintaining position. Then blit it  
+def blitRotateCenter(surf, image, topleft, angle, pos):
+
+    rotated_image = pygame.transform.rotate(image, angle)
+    new_rect = rotated_image.get_rect(center = image.get_rect(topleft = topleft).center)
+    new_rect.center = pos
+
+    surf.blit(rotated_image, new_rect)
+
+#loop forever
 while True:
+
     #set program refresh-speed
-    clock.tick(144)
+    clock.tick(60)
+
+    #--------------------------------------------------------------------------
+    if manualBot:
+        leftPressed = True if posX > pointPosX else False
+        rightPressed = True if posX < pointPosX else False
+        spacePressed = True if posY > pointPosY else False
+    #--------------------------------------------------------------------------
 
     #background fill the game-window
     screen.fill((0,0,0))
@@ -91,11 +116,44 @@ while True:
     velX += accX
     velY += accY
     posX += velX
-    posY += velY
+    posY += velY    
 
-    #draw circle at posX, posY with green color
-    pygame.draw.circle(screen, (0, 255, 0),
-                   [posX-(circleRadius/2), posY-(circleRadius/2)], circleRadius, 0)
+    #check key-booleans and draw fire thrusters accordingly
+    #if leftPressed:
+    #    blitRotateCenter(screen, fireImg, [posX-circleRadius*1.3,posY-circleRadius*2], -90)
+    #if rightPressed:
+    #    blitRotateCenter(screen, fireImg, [posX-circleRadius*2,posY-circleRadius*2], 90)
+    #if spacePressed:
+    #    blitRotateCenter(screen, fireImg, [posX-circleRadius*1.6,posY-circleRadius*1.5], 180)
+    if leftPressed:
+        blitRotateCenter(screen, fireImg, [posX,posY], -90, [posX,posY])
+    if rightPressed:
+        blitRotateCenter(screen, fireImg, [posX,posY], 90, [posX,posY])
+    if spacePressed:
+        blitRotateCenter(screen, fireImg, [posX,posY], 180, [posX,posY])
+
+    #draw circle at posX, posY with color
+    pygame.draw.circle(screen, (100, 100, 255),
+                   [posX, posY], circleRadius, 0)
+
+    #draw line from ball to point
+    pygame.draw.line(screen, (255,255,255), (posX,posY), (pointPosX, pointPosY), 1)
+
+    #measure distance from ball to point, and collect
+    distance = math.sqrt(pow(posX-pointPosX, 2) + pow(posY-pointPosY, 2))
+    if distance < circleRadius:
+        collected = True
+
+    #update point position if collected
+    if collected:
+            pointPosX = random.randint(0,width)
+            pointPosY = random.randint(0,height)
+            score +=1
+            collected = False
+
+    #draw collectable point
+    pygame.draw.circle(screen, (100, 255, 100),
+        [pointPosX, pointPosY], circleRadius/3, 0)
 
     #draw score on top-center of screen
     text = font.render("Score: " + str(score), True, (255,255,255))
@@ -105,3 +163,4 @@ while True:
     #update the display
     pygame.display.update()
 
+    
