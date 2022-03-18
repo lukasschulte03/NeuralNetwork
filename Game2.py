@@ -1,12 +1,12 @@
-from dis import dis
-from turtle import color
+from numpy import True_
 import pygame, sys, time, random, math
 from pygame.locals import *
 pygame.init()
 pygame.display.set_caption("Drones")
 screen = pygame.display.set_mode((1920,1080))
 clock = pygame.time.Clock()
-font = pygame.font.Font(None,50)
+scoreFont = pygame.font.Font(None,50)
+statFont = pygame.font.Font(None,20)
 width, height = pygame.display.get_surface().get_size() 
 fireImg = pygame.transform.scale(pygame.image.load("Fire.png").convert_alpha(), [35,120]) 
 
@@ -119,12 +119,6 @@ while True:
     posY += velY    
 
     #check key-booleans and draw fire thrusters accordingly
-    #if leftPressed:
-    #    blitRotateCenter(screen, fireImg, [posX-circleRadius*1.3,posY-circleRadius*2], -90)
-    #if rightPressed:
-    #    blitRotateCenter(screen, fireImg, [posX-circleRadius*2,posY-circleRadius*2], 90)
-    #if spacePressed:
-    #    blitRotateCenter(screen, fireImg, [posX-circleRadius*1.6,posY-circleRadius*1.5], 180)
     if leftPressed:
         blitRotateCenter(screen, fireImg, [posX,posY], -90, [posX,posY])
     if rightPressed:
@@ -156,11 +150,17 @@ while True:
         [pointPosX, pointPosY], circleRadius/3, 0)
 
     #draw score on top-center of screen
-    text = font.render("Score: " + str(score), True, (255,255,255))
+    text = scoreFont.render("Score: " + str(score), True, (255,255,255))
     text_rect = text.get_rect(center=(width/2, 25))
     screen.blit(text, text_rect)
 
+    #blit statistics
+    screen.blit(statFont.render("distance: "+str(int(distance)),True,(255,255,255)),(5,25))
+    screen.blit(statFont.render("ball pos: "+str(int(posX))+", "+str(int(posY)),True,(255,255,255)),(5,50))
+    screen.blit(statFont.render("point pos: "+str(int(pointPosX))+", "+str(int(pointPosX)),True,(255,255,255)),(5,75))
+    screen.blit(statFont.render("Dx: "+str(int(pointPosX - posX)),True,(255,255,255)),(5,100))
+    screen.blit(statFont.render("Dy: "+str(int(pointPosY - posY)),True,(255,255,255)),(5,125))
+
+
     #update the display
     pygame.display.update()
-
-    
