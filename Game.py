@@ -1,3 +1,4 @@
+from curses import flash
 from numpy import True_
 import pygame, sys, time, random, math
 from pygame.locals import *
@@ -43,7 +44,7 @@ gravityForce = -0.4
 accVerticalForce = 1
 accHorizontalForce = 0.4
 
-manualBot = True
+manualBot = False
 
 #print 'amount' number of empty lines
 def LineSpam(amount):
@@ -52,11 +53,9 @@ def LineSpam(amount):
 
 #rotate a image, maintaining position. Then blit it  
 def blitRotateCenter(surf, image, topleft, angle, pos):
-
     rotated_image = pygame.transform.rotate(image, angle)
     new_rect = rotated_image.get_rect(center = image.get_rect(topleft = topleft).center)
     new_rect.center = pos
-
     surf.blit(rotated_image, new_rect)
 
 #loop forever
