@@ -1,35 +1,35 @@
-from curses import flash
-from numpy import True_
 import pygame, sys, time, random, math
 from pygame.locals import *
 pygame.init()
 pygame.display.set_caption("Drones")
-screen = pygame.display.set_mode((1920,1080))
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
+screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 scoreFont = pygame.font.Font(None,50)
 statFont = pygame.font.Font(None,20)
-width, height = pygame.display.get_surface().get_size() 
-fireImg = pygame.transform.scale(pygame.image.load("Fire.png").convert_alpha(), [35,120]) 
-spaceshipImg = pygame.transform.scale(pygame.image.load("Spaceship.png").convert_alpha(), [55,55]) 
+fireImg = pygame.transform.scale(pygame.image.load("images/Fire.png").convert_alpha(), [35,120])
+spaceshipImg = pygame.transform.scale(pygame.image.load("images/Spaceship.png").convert_alpha(), [55,55]) 
 
-circleRadius = 25
+collectionRadius = 25
+pointRadius = 10
 
 liquidDensity = 1.255
 
 score = -1
 
+collected = True
+
 leftPressed = False
 rightPressed = False
 spacePressed = False
-
-collected = True
 
 biasLeft = 0
 biasRight = 0
 biasUp = 0
 
-posX = width / 2
-posY = height / 2
+posX = SCREEN_WIDTH / 2
+posY = SCREEN_HEIGHT / 2
 velX = 0
 velY = 0
 accX = 0
@@ -120,13 +120,13 @@ while True:
 
     #measure distance from ball to point, and collect
     distance = math.sqrt(pow(posX-pointPosX, 2) + pow(posY-pointPosY, 2))
-    #if distance < circleRadius:
-        #collected = True
+    if distance < collectionRadius + pointRadius:
+        collected = True
 
     #update point position if collected
     if collected:
-            pointPosX = random.randint(0,width)
-            pointPosY = random.randint(0,height)
+            pointPosX = random.randint(0,SCREEN_WIDTH)
+            pointPosY = random.randint(0,SCREEN_HEIGHT)
             score +=1
             collected = False
 
@@ -148,11 +148,11 @@ while True:
 
     #draw collectable point
     pygame.draw.circle(screen, (100, 255, 100),
-        [pointPosX, pointPosY], circleRadius/3, 0)
+        [pointPosX, pointPosY], pointRadius, 0)
 
     #draw score on top-center of screen
     text = scoreFont.render("Score: " + str(score), True, (255,255,255))
-    text_rect = text.get_rect(center=(width/2, 25))
+    text_rect = text.get_rect(center=(SCREEN_WIDTH/2, 25))
     screen.blit(text, text_rect)
 
     #blit statistics
