@@ -38,8 +38,8 @@ accY = 0
 pointPosX = 0
 pointPosY = 0
 
-dragCoefficientX = 0.0075
-dragCoefficientY = 0.003
+dragCoefficientX = 0#0.0075
+dragCoefficientY = 0#0.003
 gravityForce = -0.4
 accVerticalForce = 1
 accHorizontalForce = 0.4
