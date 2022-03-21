@@ -1,7 +1,6 @@
-from ctypes import pointer
-from re import I, T
-from turtle import back, xcor
-import pygame, random, os, sys
+from distutils.command.config import config
+from turtle import distance
+import pygame, random, os, sys, neat, math
 
 pygame.init()
 
@@ -91,14 +90,30 @@ class LargeCactus(Obstacle):
 
 def remove(index):
     dinosaurs.pop(index)
+    ge.pop(index)
+    nets.pop(index)
 
-def main():
-    global game_speed, x_pos_bg, y_pos_bg, obstacles, dinosaurs, points
+def distance(pos_a, pos_b):
+    dx = pos_a[0] - pos_b[0]
+    dy = pos_a[1] - pos_b[1]
+    return math.sqrt(dx**2+dy**2)
+
+def eval_genomes(genomes, config):
+    global game_speed, x_pos_bg, y_pos_bg, obstacles, dinosaurs, ge, nets, points
     clock = pygame.time.Clock()
     points = 0
 
     obstacles = []
-    dinosaurs = [Dinosaur()]
+    dinosaurs = []
+    ge = []
+    nets = []
+
+    for genome_id, genome in genomes:
+        dinosaurs.append(Dinosaur())
+        ge.append(genome)
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        nets.append(net)
+        genome.fitness = 0
 
     x_pos_bg = 0
     y_pos_bg = 380
@@ -149,12 +164,14 @@ def main():
             obstacle.update()
             for i, dinosaur in enumerate(dinosaurs):
                 if dinosaur.rect.colliderect(obstacle.rect):
+                    ge[i].fitness -= 1
                     remove(i)
 
-        user_input = pygame.key.get_pressed()
-
         for i, dinosaur in enumerate(dinosaurs):
-            if user_input[pygame.K_SPACE]:
+            output = nets[i].activate((dinosaur.rect.y,
+                                        distance((dinosaur.rect.x, dinosaur.rect.y), obstacle.rect.midtop),
+                                        game_speed))
+            if output[0] > 0.5 and dinosaur.rect.y == dinosaur.Y_POS:
                 dinosaur.dino_jump = True
                 dinosaur.dino_run = False
 
@@ -163,4 +180,20 @@ def main():
         clock.tick(30)
         pygame.display.update()
 
-main()
+
+def run(config_path):
+    config = neat.config.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+
+    pop = neat.Population(config)
+    pop.run(eval_genomes, 50)
+
+if __name__ == '__main__':
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'config.txt')
+    run(config_path)
