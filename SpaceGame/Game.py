@@ -2,8 +2,8 @@ import pygame, sys, time, random, math
 from pygame.locals import *
 pygame.init()
 pygame.display.set_caption("Drones")
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
+SCREEN_WIDTH = 1100
+SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 scoreFont = pygame.font.Font(None,50)
@@ -38,8 +38,8 @@ accY = 0
 pointPosX = 0
 pointPosY = 0
 
-dragCoefficientX = 0#0.0075
-dragCoefficientY = 0#0.003
+dragCoefficientX = 0.0075
+dragCoefficientY = 0.003
 gravityForce = -0.4
 accVerticalForce = 1
 accHorizontalForce = 0.4
