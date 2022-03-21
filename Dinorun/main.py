@@ -1,5 +1,5 @@
 from ctypes import pointer
-from re import T
+from re import I, T
 from turtle import back, xcor
 import pygame, random, os, sys
 
@@ -74,7 +74,7 @@ class Obstacle:
     def update(self):
         self.rect.x -= game_speed
         if self.rect.x < -self.rect.width:
-            obstacles.pop(index)
+            obstacles.pop()
 
     def draw(self, SCREEN):
         SCREEN.blit(self.image[self.type], self.rect)
@@ -88,6 +88,9 @@ class LargeCactus(Obstacle):
     def __init__(self, image, number_of_cacti):
         super().__init__(image, number_of_cacti)
         self.rect.y = 300
+
+def remove(index):
+    dinosaurs.pop(index)
 
 def main():
     global game_speed, x_pos_bg, y_pos_bg, obstacles, dinosaurs, points
@@ -146,7 +149,7 @@ def main():
             obstacle.update()
             for i, dinosaur in enumerate(dinosaurs):
                 if dinosaur.rect.colliderect(obstacle.rect):
-                    dinosaurs.remove(dinosaur)
+                    remove(i)
 
         user_input = pygame.key.get_pressed()
 
