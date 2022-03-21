@@ -12,6 +12,14 @@ SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 RUNNING = [pygame.image.load("Assets/Dino/DinoRun1.png").convert_alpha(),
            pygame.image.load("Assets/Dino/DinoRun2.png").convert_alpha()]
 JUMPING = pygame.image.load("Assets/Dino/DinoJump.png").convert_alpha()
+
+SMALL_CACTUS = [pygame.image.load("Assets/Cactus/SmallCactus1.png").convert_alpha(),
+                pygame.image.load("Assets/Cactus/SmallCactus2.png").convert_alpha(),
+                pygame.image.load("Assets/Cactus/SmallCactus2.png").convert_alpha()]
+LARGE_CACTUS = [pygame.image.load("Assets/Cactus/LargeCactus1.png").convert_alpha(),
+                pygame.image.load("Assets/Cactus/LargeCactus2.png").convert_alpha(),
+                pygame.image.load("Assets/Cactus/LargeCactus2.png").convert_alpha()]
+
 BG = pygame.image.load("Assets/Other/Track.png").convert_alpha()
 
 FONT = pygame.font.Font(None, 20)
@@ -56,6 +64,30 @@ class Dinosaur:
     def draw(self, SCREEN):
         SCREEN.blit(self.image, (self.rect.x, self.rect.y))
 
+class Obstacle:
+    def __init__(self, image, number_of_cacti):
+        self.image = image
+        self.type = number_of_cacti
+        self.rect = self.image[self.type].get_rect()
+        self.rect.x = SCREEN_WIDTH
+
+    def update(self):
+        self.rect.x -= game_speed
+        if self.rect.x < -self.rect.width:
+            obstacles.pop()
+
+    def draw(self, SCREEN):
+        SCREEN.blit(self.image[self.type], self.rect)
+
+class SmallCactus(Obstacle):
+    def __init__(self, image, number_of_cacti):
+        super().__init__(image, number_of_cacti)
+        self.rect.y = 325
+
+class LargeCactus(Obstacle):
+    def __init__(self, image, number_of_cacti):
+        super().__init__(image, number_of_cacti)
+        self.rect.y = 300
 
 def main():
     global game_speed, x_pos_bg, y_pos_bg, points
