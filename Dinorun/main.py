@@ -1,6 +1,4 @@
-from distutils.command.config import config
-from turtle import distance
-import pygame, random, os, sys, neat, math
+import pygame, random, os, sys, math, neat
 
 pygame.init()
 
