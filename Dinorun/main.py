@@ -1,4 +1,5 @@
-import pygame, random, os, sys, math, neat
+from asyncio.windows_events import NULL
+import pygame, random, os, sys, math, neat, time
 
 pygame.init()
 
@@ -35,6 +36,7 @@ class Dinosaur:
         self.jump_vel = self.JUMP_VEL
         self.rect = pygame.Rect(self.X_POS, self.Y_POS, img.get_width(), img.get_height())
         self.step_index = 0
+        self.jumpCount = 0
 
     def update(self):
         if self.dino_run:
@@ -49,6 +51,7 @@ class Dinosaur:
         if self.dino_jump:
             self.rect.y -= self.jump_vel * 4
             self.jump_vel -= 0.8
+            self.jumpCount += 0.5
         if self.jump_vel <= -self.JUMP_VEL:
             self.dino_jump = False
             self.dino_run = True
@@ -69,10 +72,12 @@ class Obstacle:
         self.type = number_of_cacti
         self.rect = self.image[self.type].get_rect()
         self.rect.x = SCREEN_WIDTH
+        self.lifeDistance = random.randint(45,90)
+        self.startDistance = points
 
     def update(self):
         self.rect.x -= game_speed
-        if self.rect.x < -self.rect.width:
+        if points - self.startDistance > self.lifeDistance:
             obstacles.pop()
 
     def draw(self, SCREEN):
@@ -94,9 +99,12 @@ def remove(index):
     nets.pop(index)
 
 def distance(pos_a, pos_b):
-    dx = pos_a[0] - pos_b[0]
-    dy = pos_a[1] - pos_b[1]
-    return math.sqrt(dx**2+dy**2)
+    if pos_a != NULL and pos_b != NULL:
+        dx = pos_a[0] - pos_b[0]
+        dy = pos_a[1] - pos_b[1]
+        return dx
+    else:
+        return 1000
 
 def eval_genomes(genomes, config):
     global game_speed, x_pos_bg, y_pos_bg, obstacles, dinosaurs, ge, nets, points
@@ -107,6 +115,7 @@ def eval_genomes(genomes, config):
     dinosaurs = []
     ge = []
     nets = []
+    obstacles.append(SmallCactus(SMALL_CACTUS, random.randint(0,2)))
 
     for genome_id, genome in genomes:
         dinosaurs.append(Dinosaur())
@@ -130,8 +139,12 @@ def eval_genomes(genomes, config):
     def statistics():
         global dinosaurs, game_speed, ge, BestFitness, points
 
-        if points > BestFitness:
-            BestFitness = points
+        jumpCounts = [] 
+        for i, dinosaur in enumerate(dinosaurs):
+            jumpCounts.append(int(dinosaur.jumpCount))
+        if len(jumpCounts) != 0:
+            if points / (min(jumpCounts)/5 +1) > BestFitness:
+                BestFitness = points / (min(jumpCounts)/5 +1)
 
         text_1 = FONT.render(f'Dinosaurs Alive:  {str(len(dinosaurs))}', True, (0, 0, 0))
         text_2 = FONT.render(f'Generation:  {pop.generation+1}', True, (0, 0, 0))
@@ -153,11 +166,18 @@ def eval_genomes(genomes, config):
         x_pos_bg -= game_speed
 
     run = True
+    fps = 150
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_o:
+                    fps = 40
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    fps = 150
     
         SCREEN.fill((255,255,255))
 
@@ -180,21 +200,23 @@ def eval_genomes(genomes, config):
             obstacle.update()
             for i, dinosaur in enumerate(dinosaurs):
                 if dinosaur.rect.colliderect(obstacle.rect):
-                    ge[i].fitness += points
+                    ge[i].fitness += points / ((dinosaurs[i].jumpCount +1)/5)
+                    #ge[i].fitness -= dinosaurs[i].jumpCount
                     remove(i)
 
         for i, dinosaur in enumerate(dinosaurs):
             output = nets[i].activate((dinosaur.rect.y,
-                                        distance((dinosaur.rect.x, dinosaur.rect.y), obstacle.rect.midtop),
+                                        obstacle.rect.x - dinosaur.rect.x,
                                         game_speed))
-            if output[0] > 0.5 and dinosaur.rect.y == dinosaur.Y_POS:
+            print(obstacle.rect.x - dinosaur.rect.x)
+            if output[0] < 0.5 and dinosaur.rect.y == dinosaur.Y_POS:
                 dinosaur.dino_jump = True
                 dinosaur.dino_run = False
 
         statistics()
         score()
         background()
-        clock.tick(30)
+        clock.tick(fps)
         pygame.display.update()
 
 
@@ -209,7 +231,7 @@ def run(config_path):
     )
 
     pop = neat.Population(config)
-    pop.run(eval_genomes, 200)
+    pop.run(eval_genomes, 500)
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
