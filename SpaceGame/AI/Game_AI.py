@@ -1,4 +1,4 @@
-import pygame, sys, time, random, math
+import pygame, sys, time, random, math, neat, os
 from pygame.locals import *
 pygame.init()
 pygame.display.set_caption("Drones")
@@ -19,8 +19,8 @@ accVerticalForce = 1
 accHorizontalForce = 0.4
 
 randomPositionList = []
-for i in range(0,5):
-    n = random.randint(1,30)
+for i in range(0,1000):
+    n = random.randint(10, SCREEN_HEIGHT - 10)
     randomPositionList.append(n)
 
 
@@ -81,31 +81,57 @@ class Spaceship:
 
 class Point:
     def __init__(self, img = pointImg, randPosList = randomPositionList):
+        self.posIndex = 0
         self.randPosList = randPosList
         self.image = img
         self.rect = pygame.Rect(self.randPosList[1], self.randPosList[2], img.get_width(), img.get_height())
 
     def updatePos(self):
-        self.rect.x -= game_speed
+        self.posIndex += 1
+        self.rect.x = self.randPosList[self.posIndex]
+        self.rect.y = self.randPosList[self.posIndex + 1]
         
     def draw(self, SCREEN):
         SCREEN.blit(self.image, self.rect)
 
 
 def eval_genomes(genomes, config):
-    global game_speed, x_pos_bg, y_pos_bg, obstacles, dinosaurs, ge, nets, points
+    global Points, Spaceships, ge, nets
     clock = pygame.time.Clock()
-    points = 0
 
-    obstacles = []
-    dinosaurs = []
+    Points = []
+    Spaceships = []
     ge = []
     nets = []
-    obstacles.append(SmallCactus(SMALL_CACTUS, random.randint(0,2)))
+    Points.append(Point())
 
     for genome_id, genome in genomes:
-        dinosaurs.append(Dinosaur())
+        Spaceships.append(Spaceship())
         ge.append(genome)
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
         genome.fitness = 0
+
+    for spaceship in Spaceships:
+            spaceship.Update()
+            spaceship.Draw(SCREEN)
+    for point in Points:
+            point.draw(SCREEN)
+
+def run(config_path):
+    global pop
+    config = neat.config.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path
+    )
+
+    pop = neat.Population(config)
+    pop.run(eval_genomes, 500)
+
+if __name__ == '__Game_AI__':
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'config.txt')
+    run(config_path)
