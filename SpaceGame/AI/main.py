@@ -1,5 +1,7 @@
 import pygame, sys, time, random, math, neat, os
 from pygame.locals import *
+
+from Dinorun.main import distance
 pygame.init()
 pygame.display.set_caption("Drones")
 SCREEN_WIDTH = 1100
@@ -14,9 +16,9 @@ pointImg = pygame.transform.scale(pygame.image.load("images/Spaceship.png").conv
 
 dragCoefficientX = 0.0075
 dragCoefficientY = 0.003
-gravityForce = -0.4
-accVerticalForce = 1
-accHorizontalForce = 0.4
+gravityForce = -0.2/2
+accVerticalForce = 0.5/2
+accHorizontalForce = 0.02/2
 
 randomPositionList = []
 for i in range(0,1000):
@@ -47,9 +49,10 @@ class Spaceship:
         self.biasUp = 0
         self.rect = pygame.Rect(self.X_POS, self.Y_POS, img.get_width(), img.get_height())
         self.points = 0
-        self.acc = (0, 0)
-        self.vel = (0, 0)
-        self.pos = (0, 0)
+        self.accX = 0
+        self.accY = 0
+        self.velX = 0
+        self.velY = 0
 
     def Update(self):
 
@@ -59,18 +62,14 @@ class Spaceship:
         self.biasUp = -1 if self.upPressed else 0
 
         #Handle physics
-        self.acc[0] += ((self.biasLeft + self.biasRight) * accHorizontalForce)
-        self.acc[1] += (self.biasUp * accVerticalForce) - gravityForce
-        self.vel[0] += self.acc[0]
-        self.vel[1] += self.acc[1]
-        self.rect.x += self.vel[0]
-        self.rect.y += self.vel[1]
+        self.accX += ((self.biasLeft + self.biasRight) * accHorizontalForce)
+        self.accY += (self.biasUp * accVerticalForce) - gravityForce
+        self.velX += self.accX
+        self.velY += self.accY
+        self.rect.x += self.velX
+        self.rect.y += self.velY
 
     def Draw(self, SCREEN):
-
-        #Draw Spaceship
-        blitRotateCenter(SCREEN, self.img, 0, [self.rect.x, self.rect.y])
-
         #Draw potential thrusterfires
         if self.leftPressed:
             blitRotateCenter(SCREEN, self.fireImg, -90, [self.rect.x, self.rect.y])
@@ -78,6 +77,9 @@ class Spaceship:
             blitRotateCenter(SCREEN, self.fireImg, 90, [self.rect.x, self.rect.y])
         if self.upPressed:
             blitRotateCenter(SCREEN, self.fireImg, 180, [self.rect.x, self.rect.y])
+
+        #Draw Spaceship
+        blitRotateCenter(SCREEN, self.image, 0, [self.rect.x, self.rect.y])
 
 class Point:
     def __init__(self, img = pointImg, randPosList = randomPositionList):
@@ -103,7 +105,7 @@ def eval_genomes(genomes, config):
     Spaceships = []
     ge = []
     nets = []
-    Points.append(Point())
+    #Points.append(Point())
 
     for genome_id, genome in genomes:
         Spaceships.append(Spaceship())
@@ -112,11 +114,52 @@ def eval_genomes(genomes, config):
         nets.append(net)
         genome.fitness = 0
 
-    for spaceship in Spaceships:
-            spaceship.Update()
-            spaceship.Draw(SCREEN)
-    for point in Points:
-            point.draw(SCREEN)
+    run = True
+    fps = 30
+    while run:
+        clock.tick(fps)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_o:
+                    fps = 150
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    fps = 30
+    
+        SCREEN.fill((255,255,255))
+
+        if len(Spaceships) == 0:
+            break
+
+        for spaceship in Spaceships:
+                spaceship.Update()
+                spaceship.Draw(SCREEN)
+        for point in Points:
+                point.draw(SCREEN)
+
+
+        for i, spaceship in enumerate(Spaceships):
+            inBounds = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).collidepoint(spaceship.rect.x, spaceship.rect.y)
+            if inBounds:
+                ge[i].fitness += math.dist(spaceship.rect.x, spaceship.rect.y, SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+            else:
+                del Spaceships[i]
+
+
+        for i, spaceship in enumerate(Spaceships):
+            #inputs
+            inputs = [spaceship.rect.x, spaceship.rect.y, spaceship.velX, spaceship.velY]
+            output = nets[i].activate(inputs)
+
+            #outputs
+            spaceship.leftPressed = True if output[0] < 0.5 else False
+            spaceship.rightPressed = True if output[1] < 0.5 else False
+            spaceship.upPressed = True if output[2] < 0.5 else False
+
+        pygame.display.update()
 
 def run(config_path):
     global pop
@@ -127,11 +170,10 @@ def run(config_path):
         neat.DefaultStagnation,
         config_path
     )
-
     pop = neat.Population(config)
     pop.run(eval_genomes, 500)
 
-if __name__ == '__Game_AI__':
+if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'config.txt')
     run(config_path)
