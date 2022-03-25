@@ -1,4 +1,3 @@
-from turtle import pos
 import pygame, sys, time, random, math, neat, os
 from pygame.locals import *
 
@@ -27,7 +26,7 @@ BestFitness = 0
 def GenerateRandomPositionList():
     randomPositionList = []
     for i in range(0,1000):
-        n = random.randint(10, SCREEN_HEIGHT - 10)
+        n = (random.randint(100, SCREEN_WIDTH - 100), random.randint(100, SCREEN_HEIGHT - 100) ) 
         randomPositionList.append(n)
     return randomPositionList
 
@@ -37,8 +36,6 @@ def statistics():
         global Spaceships, BestFitness
 
         for i, genome in enumerate(ge):
-            if genome.fitness != 0:
-                print(genome.fitness)
             if genome.fitness > BestFitness:
                 BestFitness = genome.fitness
 
@@ -115,15 +112,15 @@ class Point:
         self.posIndex = 0
         self.randPosList = randPosList
         self.image = img
-        self.rect = pygame.Rect(self.randPosList[1], self.randPosList[2], img.get_width(), img.get_height())
+        self.rect = pygame.Rect(self.randPosList[self.posIndex][0], self.randPosList[self.posIndex][1], img.get_width(), img.get_height())
         self.color = (random.randint(0,255), random.randint(0,255), random.randint(0,255))
         self.pointsTaken = 0
 
     def updatePos(self):
         self.posIndex += 1
         self.pointsTaken += 1
-        self.rect.x = self.randPosList[self.posIndex]
-        self.rect.y = self.randPosList[self.posIndex + 1]
+        self.rect.x = self.randPosList[self.posIndex][0]
+        self.rect.y = self.randPosList[self.posIndex][1]
         
     def draw(self, SCREEN):
         pygame.draw.circle(SCREEN, self.color, [self.rect.x, self.rect.y], 20)
@@ -139,10 +136,6 @@ def eval_genomes(genomes, config):
     Spaceships = []
     ge = []
     nets = []
-    #Points.append(Point())
-
-    for point in Points:
-        point.randPosList = GenerateRandomPositionList()
 
     for genome_id, genome in genomes:
         Spaceships.append(Spaceship())
@@ -150,7 +143,7 @@ def eval_genomes(genomes, config):
         ge.append(genome)
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        genome.fitness = 0
+        genome.fitness = 1
 
     run = True
     while run:
@@ -171,7 +164,7 @@ def eval_genomes(genomes, config):
 
         SCREEN.fill((255,255,255))
 
-        if len(Spaceships) == 0 or time.time() - timeSinceStart > 30:
+        if len(Spaceships) == 0 or time.time() - timeSinceStart > 10:
             break
 
         for spaceship in Spaceships:
@@ -183,11 +176,12 @@ def eval_genomes(genomes, config):
 
         for i, spaceship in enumerate(Spaceships):
             pygame.draw.line(SCREEN, Points[i].color, (Points[i].rect.x, Points[i].rect.y), (Spaceships[i].rect.x, Spaceships[i].rect.y), 3)
-            if distance(Points[i].rect, Spaceships[i].rect) < 50:
+            if distance((Points[i].rect.x, Points[i].rect.y), (Spaceships[i].rect.x, Spaceships[i].rect.y)) < 60:
                 Points[i].updatePos()
-                ge[i].fitness += Points[i].pointsTaken
-            inBounds = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).collidepoint(spaceship.rect.x, spaceship.rect.y)
+                ge[i].fitness += Points[i].pointsTaken*50
+            inBounds = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).collidepoint(Spaceships[i].rect.x, Spaceships[i].rect.y)
             if inBounds != True:
+                ge[i].fitness -= 1
                 Spaceships.pop(i)
                 ge.pop(i)
                 Points.pop(i)
@@ -196,7 +190,6 @@ def eval_genomes(genomes, config):
 
         for i, spaceship in enumerate(Spaceships):            
             inputs = [
-                #spaceship.rect.x, spaceship.rect.y, 
                 Spaceships[i].velX, Spaceships[i].velY, 
                 Points[i].rect.x - Spaceships[i].rect.x, Points[i].rect.y - Spaceships[i].rect.y,
                 Spaceships[i].rect.x, Spaceships[i].rect.y]
@@ -222,6 +215,8 @@ def run(config_path):
         config_path
     )
     pop = neat.Population(config)
+    stats = neat.StatisticsReporter()
+    pop.add_reporter(stats)
     pop.run(eval_genomes, n=None)
     
 
