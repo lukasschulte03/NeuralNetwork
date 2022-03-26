@@ -4,7 +4,7 @@ from pygame.locals import *
 pygame.init()
 pygame.display.set_caption("Drones")
 SCREEN_WIDTH = 1100
-SCREEN_HEIGHT = 600
+SCREEN_HEIGHT = 1100
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 scoreFont = pygame.font.Font(None,50)
@@ -29,8 +29,6 @@ def GenerateRandomPositionList():
         n = (random.randint(100, SCREEN_WIDTH - 100), random.randint(100, SCREEN_HEIGHT - 100) ) 
         randomPositionList.append(n)
     return randomPositionList
-
-posList = GenerateRandomPositionList()
 
 def statistics():
         global Spaceships, BestFitness
@@ -108,9 +106,9 @@ class Spaceship:
         blitRotateCenter(SCREEN, self.image, 0, [self.rect.x, self.rect.y])
 
 class Point:
-    def __init__(self, img = pointImg, randPosList = posList):
+    def __init__(self, img = pointImg, randPosList = [(0,0),(0,0)]):
         self.posIndex = 0
-        self.randPosList = randPosList
+        self.randPosList = GenerateRandomPositionList()
         self.image = img
         self.rect = pygame.Rect(self.randPosList[self.posIndex][0], self.randPosList[self.posIndex][1], img.get_width(), img.get_height())
         self.color = (random.randint(0,255), random.randint(0,255), random.randint(0,255))
@@ -143,7 +141,9 @@ def eval_genomes(genomes, config):
         ge.append(genome)
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        genome.fitness = 1
+        genome.fitness = 0
+    
+    #posList = GenerateRandomPositionList()
 
     run = True
     while run:
@@ -188,19 +188,23 @@ def eval_genomes(genomes, config):
 
 
 
-        for i, spaceship in enumerate(Spaceships):            
+        for i, spaceship in enumerate(Spaceships):
+            angle = math.atan2(Points[i].rect.y - Spaceships[i].rect.y, Points[i].rect.x - Spaceships[i].rect.x)            
             inputs = [
                 Spaceships[i].velX, Spaceships[i].velY, 
-                Points[i].rect.x - Spaceships[i].rect.x, Points[i].rect.y - Spaceships[i].rect.y,
-                Spaceships[i].rect.x, Spaceships[i].rect.y]
+                Spaceships[i].rect.x, Spaceships[i].rect.y,
+                #Points[i].rect.x - Spaceships[i].rect.x, Points[i].rect.y - Spaceships[i].rect.y,
+                distance((Points[i].rect.x, Points[i].rect.y), (Spaceships[i].rect.x, Spaceships[i].rect.y)),
+                math.cos(angle),
+                math.sin(angle)]
             
             #Store outputs
             output = nets[i].activate(inputs)
 
             #outputs
-            Spaceships[i].leftPressed = True if output[0] < 0.5 else False
-            Spaceships[i].rightPressed = True if output[1] < 0.5 else False
-            Spaceships[i].upPressed = True if output[2] < 0.5 else False
+            Spaceships[i].leftPressed = True if output[0] < 0 else False
+            Spaceships[i].rightPressed = True if output[1] < 0 else False
+            Spaceships[i].upPressed = True if output[2] < 0 else False
 
         statistics()
         pygame.display.update()
