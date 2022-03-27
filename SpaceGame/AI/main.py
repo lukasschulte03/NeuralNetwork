@@ -1,4 +1,6 @@
+from turtle import Screen
 import pygame, sys, time, random, math, neat, os
+import numpy as np
 from pygame.locals import *
 
 pygame.init()
@@ -55,6 +57,13 @@ def blitRotateCenter(surf, image, angle, pos):
     new_rect = rotated_image.get_rect(center = image.get_rect(topleft = pos).center)
     new_rect.center = pos
     surf.blit(rotated_image, new_rect)
+
+def min_angle_between(p1, p2):
+    ang1 = np.arctan2(*p1[::-1])
+    ang2 = np.arctan2(*p2[::-1])
+    ans1 = np.rad2deg((ang1 - ang2) % (2 * np.pi))
+    ans2 = np.rad2deg((ang2 - ang1) % (2 * np.pi))
+    return min(ans1, ans2)
 
 class Spaceship:
 
@@ -178,7 +187,10 @@ def eval_genomes(genomes, config):
             pygame.draw.line(SCREEN, Points[i].color, (Points[i].rect.x, Points[i].rect.y), (Spaceships[i].rect.x, Spaceships[i].rect.y), 3)
             if distance((Points[i].rect.x, Points[i].rect.y), (Spaceships[i].rect.x, Spaceships[i].rect.y)) < 60:
                 Points[i].updatePos()
-                ge[i].fitness += Points[i].pointsTaken*50
+                #Points[i].pointsTaken*100
+            vector = np.array([Spaceships[i].velX, Spaceships[i].velY])
+            magnitude = np.sqrt(vector.dot(vector))
+            ge[i].fitness += SCREEN_WIDTH/(distance((SCREEN_WIDTH/2, SCREEN_HEIGHT/2), (Spaceships[i].rect.x, Spaceships[i].rect.y)) + 1) #((180/(min_angle_between((Spaceships[i].velX, Spaceships[i].velY), (Points[i].rect.x - Spaceships[i].rect.x, Points[i].rect.y - Spaceships[i].rect.y))+1))/(360))*magnitude
             inBounds = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).collidepoint(Spaceships[i].rect.x, Spaceships[i].rect.y)
             if inBounds != True:
                 ge[i].fitness -= 1
@@ -189,12 +201,14 @@ def eval_genomes(genomes, config):
 
 
         for i, spaceship in enumerate(Spaceships):
-            angle = math.atan2(Points[i].rect.y - Spaceships[i].rect.y, Points[i].rect.x - Spaceships[i].rect.x)            
+            #angle = math.atan2(Points[i].rect.y - Spaceships[i].rect.y, Points[i].rect.x - Spaceships[i].rect.x)            
+            angle = math.atan2(SCREEN_HEIGHT/2 - Spaceships[i].rect.y, SCREEN_WIDTH/2 - Spaceships[i].rect.x)            
             inputs = [
                 Spaceships[i].velX, Spaceships[i].velY, 
                 Spaceships[i].rect.x, Spaceships[i].rect.y,
                 #Points[i].rect.x - Spaceships[i].rect.x, Points[i].rect.y - Spaceships[i].rect.y,
-                distance((Points[i].rect.x, Points[i].rect.y), (Spaceships[i].rect.x, Spaceships[i].rect.y)),
+                #distance((Points[i].rect.x, Points[i].rect.y), (Spaceships[i].rect.x, Spaceships[i].rect.y)),
+                distance((SCREEN_WIDTH/2, SCREEN_HEIGHT/2), (Spaceships[i].rect.x, Spaceships[i].rect.y)),
                 math.cos(angle),
                 math.sin(angle)]
             
